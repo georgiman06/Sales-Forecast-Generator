@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload • Forecast Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/hero-bg.js') }}" defer></script>
+  <style>
+    html {
+  scroll-behavior: smooth;
+}
+    body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
+  background: transparent;
+    }
+
+    #bg{position:fixed;inset:0;z-index:0}
+    main{position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .card{
+      width:min(900px, 92vw);
+      background: rgba(15,20,30,.7);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:20px; padding:28px;
+      backdrop-filter: blur(8px);
+      color:#fff; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+    }
+    h1{margin:0 0 14px;font-size:2rem;background:linear-gradient(90deg,#00C6FF,#0078D7);
+        -webkit-background-clip:text;color:transparent}
+    label{display:block;margin-top:14px;color:#c7d2fe}
+    input,select{
+      width:100%;padding:12px;margin-top:6px;border-radius:10px;border:none;outline:none;
+      background:#22262e;color:#fff;font-size:15px;
+    }
+    .row{
+      display:grid;grid-template-columns:1fr 1fr;gap:14px
+    }
+    .preview-wrap{margin-top:16px}
+    .preview-controls{display:flex;align-items:center;gap:10px;color:#bcd}
+    .table-scroll{
+      margin-top:10px;max-height:260px;overflow:auto;border-radius:10px;background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08)
+    }
+    table{width:100%;border-collapse:collapse;color:#fff;font-size:13px}
+    th,td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;white-space:nowrap}
+    .actions{margin-top:18px;display:flex;gap:12px;align-items:center}
+    .btn{
+      background:linear-gradient(90deg,#0078D7,#00C6FF);border:none;color:#fff;
+      padding:12px 20px;border-radius:12px;font-weight:700;cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,198,255,.35);transition:.2s
+    }
+    .btn:hover{filter:brightness(1.08);transform:translateY(-2px)}
+    .spinner{display:none;width:42px;height:42px;border:4px solid rgba(255,255,255,.2);
+      border-top:4px solid #00C6FF;border-radius:50%;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <main>
+    <div class="card">
+      <h1>📤 Upload Data for Forecast</h1>
+
+      <label>Select File (CSV)</label>
+      <input type="file" id="fileInput" accept=".csv"/>
+
+      <div class="preview-wrap">
+        <div class="preview-controls">
+          <span>Preview rows:</span>
+          <input type="range" id="rowsSlider" min="5" max="200" value="10" />
+          <span id="rowsCount">10</span>
+          <span style="margin-left:auto;color:#94a3b8">Scroll to view all columns →</span>
+        </div>
+        <div class="table-scroll" id="previewTable"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Date Column</label>
+          <select id="dateCol"><option value="">-- choose --</option></select>
+        </div>
+        <div>
+          <label>Metric Column</label>
+          <select id="metricCol"><option value="">-- choose --</option></select>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <label>Forecast Horizon (days)</label>
+        <input type="number" id="horizon" value="30" min="1" step="1" />
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="runBtn">🔮 Run Forecast</button>
+        <div class="spinner" id="spinner"></div>
+        <div id="msg" style="color:#9ca3af"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('previewTable');
+    const rowsSlider = document.getElementById('rowsSlider');
+    const rowsCount = document.getElementById('rowsCount');
+    const dateCol = document.getElementById('dateCol');
+    const metricCol = document.getElementById('metricCol');
+    const runBtn = document.getElementById('runBtn');
+    const spinner = document.getElementById('spinner');
+    const msg = document.getElementById('msg');
+
+    let previewData = { headers: [], rows: [] };
+
+    rowsSlider.addEventListener('input', ()=> rowsCount.textContent = rowsSlider.value);
+
+    fileInput.addEventListener('change', async () => {
+      if (!fileInput.files.length) return;
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+      const resp = await fetch('/api/preview', { method: 'POST', body: form });
+      const data = await resp.json();
+      if (data.error){ preview.innerHTML = `<p style="color:#f87171">${data.error}</p>`; return; }
+      previewData = data;
+      // fill dropdowns
+      dateCol.innerHTML = data.headers.map(h => `<option value="${h}">${h}</option>`).join('');
+      metricCol.innerHTML = data.headers.map(h => `<option value="${h}">${h}</option>`).join('');
+      // render initial table
+      renderTable();
+    });
+
+    rowsSlider.addEventListener('change', renderTable);
+
+    function renderTable(){
+      if (!previewData.headers.length){ preview.innerHTML = ''; return; }
+      const n = parseInt(rowsSlider.value,10);
+      const rows = previewData.rows.slice(0, n);
+      let html = '<table><thead><tr>' + previewData.headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+      rows.forEach(r => { html += '<tr>' + r.map(c=>`<td>${c}</td>`).join('') + '</tr>'; });
+      html += '</tbody></table>';
+      preview.innerHTML = html;
+    }
+
+    runBtn.addEventListener('click', async ()=>{
+      if (!fileInput.files.length){ msg.textContent='Please upload a CSV first.'; return; }
+      if (!dateCol.value || !metricCol.value){ msg.textContent='Pick Date and Metric columns.'; return; }
+      spinner.style.display='inline-block'; msg.textContent='Training and forecasting…';
+      const form = new FormData();
+      form.append('file', fileInput.files[0]);
+      form.append('date_col', dateCol.value);
+      form.append('target_col', metricCol.value);
+      form.append('horizon', document.getElementById('horizon').value || '30');
+      const resp = await fetch('/api/upload', { method:'POST', body: form });
+      const data = await resp.json();
+      spinner.style.display='none';
+      if (data.error){ msg.textContent = data.error; return; }
+      window.location.href = `/results?job_id=${data.job_id}`;
+    });
+  </script>
+</body>
+</html>

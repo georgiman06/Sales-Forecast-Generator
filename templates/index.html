@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Predictive Forecast Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- anime.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/hero-bg.js') }}" defer></script>
+</head>
+<body class="landing">
+
+  <!-- Animated background canvas -->
+  <canvas id="bg"></canvas>
+
+  <!-- Centered content -->
+  <main class="hero">
+    <div class="hero-card">
+      <div class="hero-icon">📊</div>
+      <h1 class="gradient">Predictive Forecast Dashboard</h1>
+      <p class="subtitle">Powered by AI • Built for Data-Driven Insights</p>
+
+      <button class="cta" onclick="window.location.href='/dashboard'">
+        🚀 Launch Dashboard
+      </button>
+    </div>
+
+    <footer class="footer">
+      © <span id="year"></span> Your Company • All rights reserved
+    </footer>
+  </main>
+
+  <script>
+    // current year in footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

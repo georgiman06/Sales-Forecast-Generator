@@ -1,0 +1,101 @@
+/* ----- Page base ----- */
+:root{
+  --black:#000;
+  --card:#0b0b0f;
+  --text:#fff;
+  --muted:#b9c4d0;
+  --accent1:#00C6FF;
+  --accent2:#0078D7;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body.landing{
+  margin:0;
+  background: var(--black);
+  color: var(--text);
+  font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+  overflow:hidden; /* hide scroll so bg fills */
+}
+
+/* ----- Fullscreen animated canvas ----- */
+#bg{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  background: radial-gradient(1200px 800px at 10% -10%, #0f1620, transparent 60%),
+              radial-gradient(900px 600px at 110% 110%, #0c0f18, transparent 60%),
+              #000;
+  z-index:0;
+}
+
+/* ----- Centered hero ----- */
+.hero{
+  position:relative;
+  z-index:1; /* above canvas */
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: clamp(16px, 3vw, 32px);
+  text-align:center;
+}
+
+.hero-card{
+  width:min(760px, 92vw);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+  padding: clamp(28px, 5vw, 48px);
+}
+
+.hero-icon{font-size:48px;margin-bottom:10px}
+
+h1{
+  margin:0 0 10px 0;
+  font-weight:800;
+  font-size: clamp(28px, 5vw, 48px);
+  letter-spacing:.3px;
+  line-height:1.1;
+}
+.gradient{
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  text-shadow: 0 0 24px rgba(0,198,255,.25);
+}
+
+.subtitle{
+  margin: 0 auto 24px;
+  max-width:52ch;
+  color: var(--muted);
+  font-size: clamp(14px, 2.3vw, 18px);
+}
+
+/* ----- CTA button ----- */
+.cta{
+  cursor:pointer;
+  border:none;
+  border-radius:14px;
+  padding:14px 28px;
+  font-size: clamp(16px, 2.4vw, 18px);
+  font-weight:700;
+  color:#fff;
+  background: linear-gradient(90deg, var(--accent2), var(--accent1));
+  box-shadow: 0 10px 30px rgba(0,198,255,.3), 0 0 0 1px rgba(255,255,255,.06) inset;
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+.cta:hover{ transform: translateY(-2px); filter:brightness(1.05) }
+.cta:active{ transform: translateY(0) scale(.99) }
+
+/* ----- Footer ----- */
+.footer{
+  margin-top:18px;
+  color:#9aa6b2;
+  font-size:14px;
+}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📊 Forecasted Sales with Key Indicators</title>
+  <script src="https://cdn.plot.ly/plotly-2.24.2.min.js"></script>
+  <style>
+    body {
+      background: radial-gradient(ellipse at top, #0a0a0a, #000);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 40px 0 120px 0;
+    }
+    h1 {
+      text-align: center;
+      color: #00C6FF;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .btn-group {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .btn {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 25px;
+      background: linear-gradient(90deg, #00C6FF, #0072FF);
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 10px rgba(0,198,255,0.4);
+    }
+    .btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(0,198,255,0.7);
+    }
+    .chart-container {
+      width: 95%;
+      max-width: 1500px;
+      height: 700px;
+      margin: 60px auto;
+      background: #111;
+      border-radius: 15px;
+      box-shadow: 0 0 25px rgba(0,198,255,0.4);
+      padding: 25px;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeInUp 1.2s ease forwards;
+    }
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #indicator-controls {
+      width: 250px;
+      position: fixed;
+      right: 40px;
+      top: 180px;
+      background: rgba(20,20,20,0.95);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #00C6FF;
+      overflow-y: auto;
+      max-height: 75vh;
+    }
+    #indicator-controls h3 {
+      text-align: center;
+      color: #00C6FF;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+    .checkbox { margin: 8px 0; }
+    .checkbox input { margin-right: 8px; }
+    .loading {
+      text-align: center;
+      margin-top: 100px;
+      font-size: 1.3rem;
+      color: #00C6FF;
+    }
+    #forecast-range {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    select {
+      background-color: #111;
+      border: 1px solid #00C6FF;
+      color: #00C6FF;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .metrics-section {
+      width: 90%;
+      max-width: 1200px;
+      margin: 40px auto;
+      text-align: center;
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0,198,255,0.3);
+    }
+    .metrics-grid {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      color: #cbd5e1;
+    }
+    .metric-box {
+      text-align: center;
+      color: #00C6FF;
+    }
+    .metric-box h3 {
+      font-size: 1.1rem;
+      margin-bottom: 5px;
+    }
+    .metric-box p {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 0;
+      color: #f1f5f9;
+    }
+    .result-summary {
+      width: 90%;
+      max-width: 1200px;
+      margin: 40px auto;
+      background: #111827;
+      border-radius: 10px;
+      padding: 25px;
+      box-shadow: 0 0 20px rgba(0,198,255,0.3);
+    }
+    .result-summary h2 {
+      color: #00C6FF;
+      text-align: left;
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+    }
+    .result-summary p {
+      color: #e2e8f0;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>📈 Forecasted Sales with Key Indicators</h1>
+
+  <div class="btn-group">
+    <button class="btn" onclick="window.location.href='/dashboard'">← Back to Dashboard</button>
+    <button class="btn" id="download-btn">⬇️ Download Forecast CSV</button>
+  </div>
+
+  <div id="forecast-range">
+    <label for="horizon" style="margin-right:10px;">Forecast Horizon:</label>
+    <select id="horizon">
+      <option value="30">30 Days</option>
+      <option value="90">90 Days</option>
+    </select>
+  </div>
+
+  <div id="loading" class="loading">Loading forecast data...</div>
+
+  <div class="chart-container" id="chart1"></div>
+
+  <div id="indicator-controls">
+    <h3>Components to Display</h3>
+    <div id="checkbox-list"></div>
+  </div>
+
+  <div class="metrics-section">
+    <h2>📊 Model Evaluation Metrics</h2>
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <h3>MAE</h3>
+        <p id="mae-value">—</p>
+      </div>
+      <div class="metric-box">
+        <h3>RMSE</h3>
+        <p id="rmse-value">—</p>
+      </div>
+      <div class="metric-box">
+        <h3>MAPE</h3>
+        <p id="mape-value">—</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-summary">
+    <h2>🧠 Result Interpretation</h2>
+    <p id="trend-summary">Analyzing trend...</p>
+  </div>
+
+  <script>
+    const JOB_ID = "{{ job_id }}";
+
+    async function loadForecast(horizon = 30) {
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("chart1").innerHTML = "";
+      document.getElementById("checkbox-list").innerHTML = "";
+      document.getElementById("trend-summary").innerText = "Analyzing trend...";
+
+      const res = await fetch(`/api/result?job_id=${JOB_ID}&horizon=${horizon}`);
+      const data = await res.json();
+
+      if (data.error) {
+        document.getElementById("loading").innerText = "Error: " + data.error;
+        return;
+      }
+
+      document.getElementById("loading").style.display = "none";
+
+      const traces = data.series || [];
+      const layout = {
+        ...data.layout,
+        title: "",
+        xaxis: {
+          title: "Date",
+          rangeslider: { visible: true },
+          rangeselector: {
+            buttons: [
+              { step: "day", stepmode: "backward", count: 7, label: "7d" },
+              { step: "month", stepmode: "backward", count: 1, label: "1m" },
+              { step: "month", stepmode: "backward", count: 3, label: "3m" },
+              { step: "all", label: "All" }
+            ]
+          }
+        },
+        yaxis: { title: data.layout?.yaxis?.title || "Value" },
+        hovermode: "x unified",
+        dragmode: "pan"
+      };
+
+      const config = {
+        responsive: true,
+        displayModeBar: true,
+        scrollZoom: true,
+        modeBarButtonsToAdd: ["drawline", "eraseshape"]
+      };
+
+      Plotly.newPlot('chart1', traces, layout, config);
+
+      // Checkbox toggle for each component
+      const checkboxContainer = document.getElementById("checkbox-list");
+      traces.forEach((trace, index) => {
+        const div = document.createElement("div");
+        div.className = "checkbox";
+        div.innerHTML = `
+          <label>
+            <input type="checkbox" data-index="${index}" ${trace.visible === true ? "checked" : ""}>
+            ${trace.name}
+          </label>`;
+        checkboxContainer.appendChild(div);
+      });
+
+      checkboxContainer.addEventListener("change", (e) => {
+        if (e.target.matches("input[type='checkbox']")) {
+          const i = parseInt(e.target.dataset.index);
+          const visible = e.target.checked;
+          Plotly.restyle('chart1', {visible: visible}, [i]);
+        }
+      });
+
+      // ✅ Correct metrics rendering (case-insensitive)
+      const metrics = data.metrics || {};
+      document.getElementById("mae-value").innerText = 
+          metrics.MAE !== undefined ? metrics.MAE.toFixed(2) : "—";
+      document.getElementById("rmse-value").innerText = 
+          metrics.RMSE !== undefined ? metrics.RMSE.toFixed(2) : "—";
+      document.getElementById("mape-value").innerText = 
+          metrics.MAPE !== undefined ? metrics.MAPE.toFixed(2) : "—";
+
+      // Trend summary
+      const values = traces[0]?.y || [];
+      if (values.length > 2) {
+        const start = values[0];
+        const end = values[values.length - 1];
+        const diff = ((end - start) / start) * 100;
+        let summary = "";
+        if (diff > 10) summary = `The forecast shows a strong upward trend (~${diff.toFixed(2)}% increase). Sales are expected to grow significantly.`;
+        else if (diff < -10) summary = `The forecast indicates a declining trend (~${Math.abs(diff).toFixed(2)}% decrease), suggesting reduced performance.`;
+        else summary = `The forecast suggests a relatively stable trend with minor fluctuations (~${diff.toFixed(2)}% change).`;
+        document.getElementById("trend-summary").innerText = summary;
+      }
+    }
+
+    document.getElementById("horizon").addEventListener("change", (e) => {
+      loadForecast(parseInt(e.target.value));
+    });
+
+    loadForecast(30);
+  </script>
+</body>
+</html>
